@@ -64,7 +64,7 @@ app.get("/api/test-integration", async (c) => {
   let geminiMessage = "";
   try {
     const prompt = `אתה שופט ביקורת קוד ב-CodeReview Arena. תן משפט עידוד אחד קצר (עד 7 מילים) בעברית למתכנת שמתחיל לסקור את האתגר "${sampledChallenge?.title}".`;
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiKey}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${geminiKey}`;
 
     const geminiRes = await fetch(geminiUrl, {
       method: "POST",
@@ -100,7 +100,7 @@ app.get("/api/test-integration", async (c) => {
         sample: `${sampledChallenge?.title} (רמה ${sampledChallenge?.level})`,
       },
       ai: {
-        status: "פעיל (Gemini 2.5 Flash Lite - הזול והמהיר ביותר)",
+        status: "פעיל (Gemini 3.5 Flash Lite)",
         response: geminiMessage,
       },
     },
