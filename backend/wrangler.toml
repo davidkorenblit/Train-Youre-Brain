@@ -1,0 +1,7 @@
+name = "codereview-arena-backend"
+main = "src/index.ts"
+compatibility_date = "2024-10-01"
+compatibility_flags = [ "nodejs_compat" ]
+
+[vars]
+SUPABASE_URL = "https://lyxcrcnhcujldrktoblm.supabase.co"

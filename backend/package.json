@@ -1,0 +1,20 @@
+{
+  "name": "codereview-arena-backend",
+  "version": "1.0.0",
+  "description": "CodeReview Arena Backend API on Cloudflare Workers",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build": "wrangler deploy --dry-run"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "hono": "^4.6.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241004.0",
+    "typescript": "^5.6.2",
+    "wrangler": "^3.80.0"
+  }
+}
