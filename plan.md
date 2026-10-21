@@ -1,77 +1,96 @@
-# CodeReview Arena - תוכנית עבודה (Action Plan)
+# CodeReview Arena 🧠 - תוכנית עבודה מעודכנת (Action Plan)
 
-**מטרת הפלטפורמה:** סימולטור אימון ותרגול בקריאת קוד וביצוע Code Review (ללא צורך בסביבת הרצה או קומפילציה).
-**סטטוס נוכחי:** נוצר דאטה-סט מלא של 35 תרגילים עם באגים מושתלים ופתרונות ייחוס.
-
----
-
-## 1. החלטה ארכיטקטונית: מסד נתונים (Database Decision)
-
-**ההחלטה:** שימוש ב-**Supabase (Managed PostgreSQL)** במסלול החינמי (Free Tier), עם תמיכה מקומית ב-`docker-compose.yml` לעבודה אופליין.
-
-### הנימוקים:
-1. **ממשק ניהול ויזואלי (Table Editor):** צפייה נוחה בעמודות `JSONB` מורכבות (`golden_bugs`, `user_claims`, `ai_evaluation`) וניהול תרגילים קל.
-2. **אימות מובנה (Built-in Auth):** תמיכה מיידית ב-OAuth (GitHub, Google, Email) עם טוקנים של JWT, ללא צורך בכתיבת קוד אבטחה וניהול Sessions מחדש בשרת.
-3. **חיבור PostgreSQL תקני:** חיבור ישיר ב-Connection String רגיל (`postgresql://...`). כל שכבת ה-DB ב-Python נכתבת לפי תקן רגיל (AsyncPG / SQLAlchemy), כך שהמעבר בין סופהבייס לדוקר מקומי הוא שינוי של משתנה סביבה אחד בלבד (`DATABASE_URL`).
-4. **חיסכון במשאבים מקומיים:** מונע עומס על זיכרון המחשב (WSL2 / Docker Desktop).
+**מטרת הפלטפורמה:** סימולטור מתקדם לאימון מפתחים בקריאת קוד וביצוע Code Review מקצועי (GitHub PR-style), עם הערכה מיידית מבוססת AI.
 
 ---
 
-## 2. סטטוס הדאטה-סט (35 תרגילים מוכנים)
+## 1. סטטוס התשתית - הושלם בהצלחה (Production Verified) ✅
 
-כל תרגיל מאורגן בתיקייה משלו ומכיל 4 קבצים:
-- `README.md` – הקשר עסקי ודגשי סקירה.
-- `solution.py` – פתרון הייחוס התקין.
-- `buggy.py` – קוד פגום (מאומת תחבירית) עם באג בודד.
-- `golden_bug.json` – שורה, חומרה, תיאור הבאג ותיקון מוצע.
+כל 4 השירותים מחוברים, מוגנים ומדברים ביניהם ב-Production:
 
-| רמה | כמות | מקור | סוגי הכשלים שהושתלו |
-| :--- | :---: | :--- | :--- |
-| **Level 1: Fundamentals** | 15 | `exercism/python` | לוגיקה, Off-by-one, טיפול במחרוזות, חזקות, היפוך אופרנדים, הסתעפויות חוסמות. |
-| **Level 2: Software Engineering** | 10 | `faif/python-patterns` | תבניות עיצוב ו-OOP: Mutable Default Arguments, Class vs Instance Variable, בליעת חריגות, שבירת אנקפסולציה, העתקה שטחית. |
-| **Level 3: Real-World Backend** | 10 | `nsidnev/fastapi-realworld-example-app` | כשלי Production: השבתת חתימות JWT, הזרקת SQL, עקיפת הרשאות (BOLA/IDOR), דליפת חיבורי DB, חסימת ה-Event Loop. |
+| שירות | טכנולוגיה | סטטוס | תפקיד |
+| :--- | :--- | :---: | :--- |
+| **Frontend** | React 18 + Vite + TypeScript (GitHub Pages) | ✅ פעיל | ממשק משתמש ו-IDE לביצוע ביקורת קוד |
+| **Backend** | Hono + Cloudflare Workers (Serverless Edge) | ✅ פעיל | API גלובלי מהיר ללא Cold Starts |
+| **Database** | Supabase (PostgreSQL Cloud) | ✅ פעיל | 35 אתגרים מאוחסנים ומאומתים |
+| **AI Judge** | Google Gemini 3.5 Flash Lite | ✅ פעיל | מודל שפיטה מהיר וזול עם Structured Output |
 
----
-
-## 3. שלבי העבודה הבאים (Roadmap)
-
-### שלב א': הקמת תשתית מסד הנתונים והזרעת מידע (Database Setup & Seeding)
-- [ ] פתיחת פרויקט חדש ב-Supabase (או הרצת Postgres מקומי).
-- [ ] יצירת הסכמה לפי ה-PRD:
-  - טבלת `challenges` (מזהה, שם, רמה, שפה, הקשר, קוד פגום, קוד תקין, `golden_bugs` ב-JSONB).
-  - טבלת `users` (מזהה, אימייל, שם, רמה, XP, יחס אות לרעש SNR).
-  - טבלת `submissions` (מזהה הגשה, משתמש, תרגיל, טענות המשתמש, הערכת AI, ציון סופי).
-- [ ] כתיבת סקריפט `seed_challenges.py`: קריאת 35 התרגילים מתיקיית `dataset/` והזרקתם ל-DB.
+* **Frontend URL:** [https://davidkorenblit.github.io/Train-Youre-Brain/](https://davidkorenblit.github.io/Train-Youre-Brain/)
+* **Backend API URL:** `https://train-youre-brain.dycoren18.workers.dev`
+* **בדיקת אינטגרציה מקצה לקצה:** הושלמה בהצלחה (1.78 שניות למעגל מלא של 4 השירותים).
 
 ---
 
-### שלב ב': מנוע ההערכה מבוסס AI (The Core AI Judge)
-- [ ] כתיבת מודול `ai_judge.py`:
-  - חיבור ל-API של `gemini-2.5-flash` (או מודל מהיר וזול תומך Structured Outputs).
-  - הגדרת Pydantic Schema מובנה לפלט ההערכה:
-    - `total_score` (0–100 משוקלל).
-    - `true_positives` (באגים שזוהו נכון).
-    - `false_positives` (הערות סרק שגורעות מציון ה-SNR).
-    - `false_negatives` (באגים אמיתיים שפוספסו).
-    - `feedback` (הסבר בונה ומקצועי למפתח).
-  - הגנת Prompt Injection (תחימת קלט משתמש בתגיות XML והתעלמות מהוראות זדוניות).
-- [ ] כיול הפרומפט מול 3 תרחישי בדיקה (תשובה מושלמת, תשובה חלקית, תשובה שגויה לחלוטין).
+## 2. משימות Backend (Cloudflare Workers + Supabase + Gemini) 🛠️
+
+### משימה ב.1: מנוע השפיטה `ai_judge.ts`
+- [ ] יצירת מודול `backend/src/services/ai_judge.ts`.
+- [ ] הגדרת מבנה JSON Schema נוקשה לתשובת המודל:
+  ```ts
+  interface ReviewEvaluation {
+    score: number;             // 0-100
+    true_positives: string[];  // באגים שאותרו נכון
+    false_positives: string[]; // הערות שווא שמורידות ציון (Noise)
+    false_negatives: string[]; // באגים אמיתיים שפוספסו
+    snr_rating: "Excellent" | "Good" | "Needs Improvement";
+    ai_feedback: string;       // הסבר בונה בעברית
+    suggested_fix_review: string;
+  }
+  ```
+- [ ] הגנת Prompt Injection: תחימת הערות המשתמש בתוך תגיות XML (`<user_review>`) והוראה לשופט להתעלם מפקודות עקיפה.
+
+### משימה ב.2: נקודות קצה ב-API (Hono Routes)
+- [ ] `GET /api/challenges`:
+  - מחזיר את כל 35 התרגילים (מזהה, שם, רמה, שפה, הקשר – ללא פתרון הייחוס).
+- [ ] `GET /api/challenges/:id`:
+  - מחזיר תרגיל בודד עם ה-README והקוד הפגום (`buggy_code`).
+- [ ] `POST /api/challenges/:id/submit`:
+  - מקבל מערך של הערות המשתמש (שורה, חומרה, תיאור, הצעה לתיקון).
+  - שולף את ה-`golden_bug` של האתגר מ-Supabase.
+  - מריץ את `ai_judge` מול Gemini 3.5 Flash Lite.
+  - שומר את ההגשה בטבלת `submissions` ב-Supabase.
+  - מחזיר את הציון, המשוב, ואת פתרון הייחוס (`solution_code`).
+- [ ] `GET /api/submissions/:id`:
+  - שליפת היסטוריית הגשה לצפייה חוזרת.
 
 ---
 
-### שלב ג': שרת ה-Backend ב-FastAPI
-- [ ] הקמת שלד פרויקט FastAPI מודולרי:
-  - `GET /api/challenges` – רשימת תרגילים מסוננת לפי רמה ונושא.
-  - `GET /api/challenges/{id}` – קבלת תרגיל (הקשר וקוד פגום בלבד, ללא פתרון הייחוס).
-  - `POST /api/challenges/{id}/submit` – קבלת ביקורת הקוד מהמשתמש, הרצת השופט האוטומטי ושמירת התוצאות ב-DB.
-  - `GET /api/submissions/{id}` – שליפת פידבק מלא ופתרון הייחוס לאחר סיום ההגשה.
-  - `GET /api/users/profile` – מעקב XP, דרגות (Junior Reviewer עד Principal) ו-Streak יומי.
+## 3. משימות Frontend (React + Monaco Editor + GitHub Pages) 🎨
+
+### משימה ג.1: שילוב עורך הקוד Monaco Editor
+- [ ] התקנת `@monaco-editor/react`.
+- [ ] הגדרת העורך במצב `readOnly: true` עם Theme כהה (VS Code Dark).
+- [ ] הוספת מנגנון סימון שורות (Glyph Margin) עם אייקון כחול `+` שמופיע במעבר עכבר (Hover) על כל שורה – בדיוק כמו ב-GitHub Pull Requests.
+- [ ] לחיצה על `+` פותחת טופס הוספת הערה (Inline Comment Form) צמוד לאותה שורה.
+
+### משימה ג.2: טופס ומבנה הממצאים (Review Findings Drawer)
+- [ ] טופס הוספת ממצא כולל:
+  - מספר שורה (נקבע אוטומטית לפי הלחיצה).
+  - דרגת חומרה: `Critical` 🔴, `High` 🟠, `Medium` 🟡, `Low` 🔵.
+  - תיאור הכשל (Textarea).
+  - הצעת קוד מתקן (אופציונלי).
+- [ ] תצוגת רשימת הערות פעילות בצד המסך עם אפשרות עריכה ומחיקה לפני שליחה.
+
+### משימה ג.3: סרגל ניווט ובחירת אתגרים (Challenge Explorer)
+- [ ] סרגל צדדי לבחירת אתגר מתוך 35 התרגילים.
+- [ ] סינון לפי רמות:
+  - 🟢 **Level 1: Fundamentals** (15 אתגרי לוגיקה ואלגוריתמיקה)
+  - 🟡 **Level 2: Software Engineering** (10 אתגרי OOP ותבניות עיצוב)
+  - 🔴 **Level 3: Real-World Backend** (10 אתגרי Production & Security)
+- [ ] אינדיקציה ויזואלית לאתגרים שכבר נפתרו (V ירוק + ציון).
+
+### משימה ג.4: מסך תוצאות ומשוב (Scorecard & Diff Viewer)
+- [ ] מסך סיכום מעוצב שנפתח מיד לאחר לחיצה על "שלח ביקורת":
+  - מד ציון משוקלל (0–100) עם אנימציית מד מהירות/טבעת.
+  - פירוק SNR: פגיעות מדויקות מול הערות סרק.
+  - כרטיסיית פידבק מילולי אישי מ-Gemini AI.
+  - השוואת קוד (Diff Viewer): הצגת הקוד הפגום מול פתרון הייחוס התקין.
 
 ---
 
-### שלב ד': ממשק המשתמש (Frontend MVP)
-- [ ] הקמת אפליקציית React + TypeScript + Vite.
-- [ ] הטמעת Monaco Editor במצב `readOnly: true` עם מספור שורות ו-Syntax Highlighting.
-- [ ] הוספת מנגנון סימון שורות ולחיצה להוספת ממצא (Inline Comments בדומה ל-GitHub PR).
-- [ ] טופס מובנה: מספר שורה, חומרה (`Low`, `Medium`, `High`, `Critical`), תיאור הבאג, והצעת תיקון.
-- [ ] מסך משוב: הצגת ציון, ניתוח פגיעות נכונות/פספוסים, וחשיפת קוד הפתרון.
+## 4. מפת דרכים ליישום (Execution Sequence)
+
+1. **שלב 1 (Backend Core):** הוספת מסלולי ה-API ב-Worker וחיבור ה-AI Judge להערכת ביקורת.
+2. **שלב 2 (Frontend Layout):** שילוב Monaco Editor וסרגל בחירת אתגרים מ-Supabase.
+3. **שלב 3 (Interaction Flow):** מימוש מנגנון הוספת הערות שורה (PR Comments) ושליחתן ל-API.
+4. **שלב 4 (Score & Polish):** מסך תוצאות, חשיפת הפתרון וליטוש עיצובי מלא.
