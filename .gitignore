@@ -41,4 +41,8 @@ venv.bak/
 *.sublime-project
 *.sublime-workspace
 .DS_Store
-Thumbs.db
+# Node & Frontend
+node_modules/
+dist/
+.wrangler/
+*.tsbuildinfo
