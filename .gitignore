@@ -46,5 +46,3 @@ node_modules/
 dist/
 .wrangler/
 *.tsbuildinfo
-scripts/list_gemini_models.py
-scripts/test_gemini_25.py
