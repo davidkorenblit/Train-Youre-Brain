@@ -1,5 +1,5 @@
 {
-  "name": "codereview-arena-backend",
+  "name": "train-youre-brain",
   "version": "1.0.0",
   "description": "CodeReview Arena Backend API on Cloudflare Workers",
   "main": "src/index.ts",

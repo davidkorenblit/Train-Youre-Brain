@@ -1,4 +1,4 @@
-name = "codereview-arena-backend"
+name = "train-youre-brain"
 main = "src/index.ts"
 compatibility_date = "2024-10-01"
 compatibility_flags = [ "nodejs_compat" ]
