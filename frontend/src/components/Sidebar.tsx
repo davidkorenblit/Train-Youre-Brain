@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ChallengeMetadata, SolvedRecord } from "../types";
+import { getChallengeHebrewSummary } from "../data/challengeSummaries";
 
 interface SidebarProps {
   challenges: ChallengeMetadata[];
@@ -24,10 +25,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const filteredChallenges = challenges.filter((c) => {
     const matchesLevel = levelFilter === null || c.level === levelFilter;
+    const hebrew = getChallengeHebrewSummary(c.slug);
+    const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
-      searchQuery === "" ||
-      c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.slug.toLowerCase().includes(searchQuery.toLowerCase());
+      q === "" ||
+      c.title.toLowerCase().includes(q) ||
+      c.slug.toLowerCase().includes(q) ||
+      (hebrew && hebrew.hebrewTitle.toLowerCase().includes(q)) ||
+      (hebrew && hebrew.category.toLowerCase().includes(q));
     return matchesLevel && matchesSearch;
   });
 
@@ -86,6 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {filteredChallenges.map((item) => {
               const isSelected = item.slug === selectedSlug;
               const solvedInfo = solvedMap[item.id] || solvedMap[item.slug];
+              const hebrew = getChallengeHebrewSummary(item.slug);
 
               return (
                 <div
@@ -94,11 +100,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() => onSelectChallenge(item.slug)}
                 >
                   <div className="challenge-info">
-                    <span className="challenge-title">{item.title}</span>
+                    <span className="challenge-title">
+                      {hebrew ? hebrew.hebrewTitle : item.title}
+                    </span>
                     <div className="challenge-meta">
-                      <span>רמה {item.level}</span>
+                      <span style={{ color: "var(--cyan-glow)" }}>{item.title}</span>
                       <span>•</span>
-                      <span>{item.language}</span>
+                      <span>רמה {item.level}</span>
                     </div>
                   </div>
 

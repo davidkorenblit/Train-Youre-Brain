@@ -1,5 +1,6 @@
 import React from "react";
 import { ChallengeDetail } from "../types";
+import { getChallengeHebrewSummary } from "../data/challengeSummaries";
 
 interface HeaderProps {
   currentChallenge: ChallengeDetail | null;
@@ -66,12 +67,17 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        {currentChallenge && (
-          <div className="header-active-challenge">
-            <span className="active-title">{currentChallenge.title}</span>
-            {getLevelBadge(currentChallenge.level)}
-          </div>
-        )}
+        {currentChallenge && (() => {
+          const hebrew = getChallengeHebrewSummary(currentChallenge.slug);
+          return (
+            <div className="header-active-challenge">
+              <span className="active-title">
+                {hebrew ? `${hebrew.hebrewTitle} (${currentChallenge.title})` : currentChallenge.title}
+              </span>
+              {getLevelBadge(currentChallenge.level)}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Action Buttons */}

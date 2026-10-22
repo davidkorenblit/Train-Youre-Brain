@@ -1,10 +1,19 @@
 import React from "react";
+import { getChallengeHebrewSummary } from "../data/challengeSummaries";
 
 interface MarkdownViewerProps {
   content: string;
+  slug?: string;
+  challengeTitle?: string;
 }
 
-export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ content }) => {
+export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
+  content,
+  slug,
+  challengeTitle,
+}) => {
+  const hebrewSummary = getChallengeHebrewSummary(slug);
+
   // Simple, robust zero-dependency parser for exercise README markdown
   const lines = content.split("\n");
   const renderedElements: React.ReactNode[] = [];
@@ -104,5 +113,44 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ content }) => {
 
   flushList();
 
-  return <div className="instructions-view">{renderedElements}</div>;
+  return (
+    <div className="instructions-view">
+      {hebrewSummary && (
+        <div className="hebrew-mission-brief">
+          <div className="mission-brief-header">
+            <div className="mission-brief-badge">
+              <span>🎯 תדריך משימה בעברית</span>
+            </div>
+            <span className="mission-brief-category">{hebrewSummary.category}</span>
+          </div>
+
+          <h2 className="mission-brief-title">
+            {hebrewSummary.hebrewTitle} {challengeTitle && `(${challengeTitle})`}
+          </h2>
+
+          <p className="mission-brief-summary">{hebrewSummary.summary}</p>
+
+          <div className="mission-brief-box">
+            <strong>התנהגות צפויה / דוגמה:</strong>
+            <p>{hebrewSummary.expectedBehavior}</p>
+          </div>
+
+          <div className="mission-brief-checklist">
+            <strong>דגשים מומלצים לביקורת הקוד:</strong>
+            <ul>
+              {hebrewSummary.reviewTips.map((tip, idx) => (
+                <li key={idx}>{tip}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="mission-brief-divider">
+            <span>📖 מפרט טכני והוראות מקוריות באנגלית (Original Specification):</span>
+          </div>
+        </div>
+      )}
+
+      {renderedElements}
+    </div>
+  );
 };

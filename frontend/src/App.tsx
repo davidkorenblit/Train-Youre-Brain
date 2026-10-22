@@ -14,6 +14,7 @@ import {
   SolvedRecord,
 } from "./types";
 import { fetchChallenges, fetchChallenge, submitReview } from "./services/api";
+import { getChallengeHebrewSummary } from "./data/challengeSummaries";
 
 const STORAGE_SOLVED_KEY = "codereview_arena_solved_map";
 
@@ -164,6 +165,7 @@ export function App() {
   };
 
   const activeExistingComment = comments.find((c) => c.line_number === activeLineForComment);
+  const hebrewSummary = getChallengeHebrewSummary(currentChallenge?.slug);
 
   return (
     <div className="app-shell">
@@ -254,6 +256,23 @@ export function App() {
                 </div>
               ) : currentChallenge ? (
                 <>
+                  {hebrewSummary && (
+                    <div className="editor-hebrew-quick-brief">
+                      <div className="quick-brief-summary">
+                        <span className="quick-brief-tag">💡 תדריך מקוצר:</span>
+                        <strong>{hebrewSummary.hebrewTitle}</strong>
+                        <span className="quick-brief-desc">— {hebrewSummary.summary}</span>
+                      </div>
+                      <button
+                        className="btn-quick-brief-details"
+                        onClick={() => setActiveTab("instructions")}
+                        title="צפה בהוראות ודגשי ביקורת מלאים"
+                      >
+                        <span>תדריך מלא 📖</span>
+                      </button>
+                    </div>
+                  )}
+
                   <CodeEditor
                     code={currentChallenge.buggy_code}
                     language={currentChallenge.language || "python"}
@@ -284,7 +303,11 @@ export function App() {
           {/* Tab 2: Instructions (Markdown Context) */}
           {activeTab === "instructions" && (
             currentChallenge ? (
-              <MarkdownViewer content={currentChallenge.context_prompt} />
+              <MarkdownViewer
+                content={currentChallenge.context_prompt}
+                slug={currentChallenge.slug}
+                challengeTitle={currentChallenge.title}
+              />
             ) : (
               <div className="instructions-view">
                 <p>טוען הוראות...</p>
