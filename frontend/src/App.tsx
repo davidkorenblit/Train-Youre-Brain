@@ -1,155 +1,317 @@
 import { useState, useEffect } from "react";
+import { Header } from "./components/Header";
+import { Sidebar } from "./components/Sidebar";
+import { CodeEditor } from "./components/CodeEditor";
+import { InlineCommentForm } from "./components/InlineCommentForm";
+import { ReviewDrawer } from "./components/ReviewDrawer";
+import { ScoreModal } from "./components/ScoreModal";
+import {
+  ChallengeMetadata,
+  ChallengeDetail,
+  UserComment,
+  SubmitReviewResponse,
+  SolvedRecord,
+} from "./types";
+import { fetchChallenges, fetchChallenge, submitReview } from "./services/api";
 
-const BACKEND_URL =
-  import.meta.env.VITE_API_URL || "https://train-youre-brain.dycoren18.workers.dev";
-
-interface IntegrationResult {
-  success: boolean;
-  totalLatencyMs: number;
-  services: {
-    frontend: string;
-    worker: string;
-    database: {
-      status: string;
-      sample: string;
-    };
-    ai: {
-      status: string;
-      response: string;
-    };
-  };
-  timestamp: string;
-}
+const STORAGE_SOLVED_KEY = "codereview_arena_solved_map";
 
 export function App() {
-  const [basicStatus, setBasicStatus] = useState<"loading" | "connected" | "error">("loading");
-  const [basicLatency, setBasicLatency] = useState<number | null>(null);
+  // State
+  const [challenges, setChallenges] = useState<ChallengeMetadata[]>([]);
+  const [currentChallenge, setCurrentChallenge] = useState<ChallengeDetail | null>(null);
+  const [isLoadingChallenges, setIsLoadingChallenges] = useState(true);
+  const [isLoadingChallengeDetail, setIsLoadingChallengeDetail] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [testingAll, setTestingAll] = useState(false);
-  const [integrationResult, setIntegrationResult] = useState<IntegrationResult | null>(null);
-  const [integrationError, setIntegrationError] = useState<string | null>(null);
+  // Active view tab in workspace (Editor vs Problem README)
+  const [activeTab, setActiveTab] = useState<"editor" | "instructions">("editor");
 
-  const checkBasicHealth = async () => {
-    setBasicStatus("loading");
-    const start = performance.now();
+  // User PR comments on the current challenge
+  const [comments, setComments] = useState<UserComment[]>([]);
+
+  // Inline commenting state
+  const [activeLineForComment, setActiveLineForComment] = useState<number | null>(null);
+  const [commentFormTopPx, setCommentFormTopPx] = useState(40);
+
+  // Sidebar and Drawer visibility
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Submission & Scoring state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [evaluationResponse, setEvaluationResponse] = useState<SubmitReviewResponse | null>(null);
+
+  // Solved challenges map loaded from localStorage
+  const [solvedMap, setSolvedMap] = useState<Record<string, SolvedRecord>>(() => {
     try {
-      const res = await fetch(`${BACKEND_URL}/health`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      await res.json();
-      setBasicLatency(Math.round(performance.now() - start));
-      setBasicStatus("connected");
+      const saved = localStorage.getItem(STORAGE_SOLVED_KEY);
+      return saved ? JSON.parse(saved) : {};
     } catch {
-      setBasicLatency(null);
-      setBasicStatus("error");
+      return {};
     }
-  };
+  });
 
-  const runFullIntegrationTest = async () => {
-    setTestingAll(true);
-    setIntegrationError(null);
-    setIntegrationResult(null);
-
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/test-integration`);
-      const data = await res.json();
-
-      if (!res.ok || data.error) {
-        throw new Error(data.error || `HTTP ${res.status}`);
-      }
-
-      setIntegrationResult(data);
-    } catch (err: any) {
-      setIntegrationError(err.message || "שגיאה בבדיקת האינטגרציה");
-    } finally {
-      setTestingAll(false);
-    }
-  };
-
+  // 1. Initial Load: Fetch all 35 challenges
   useEffect(() => {
-    checkBasicHealth();
+    async function init() {
+      setIsLoadingChallenges(true);
+      setError(null);
+      try {
+        const list = await fetchChallenges();
+        setChallenges(list);
+
+        if (list.length > 0) {
+          // Load the first challenge or resume from last viewed
+          const savedSlug = localStorage.getItem("codereview_last_slug") || list[0].slug;
+          const target = list.find((c) => c.slug === savedSlug) || list[0];
+          await loadChallenge(target.slug);
+        }
+      } catch (err: any) {
+        setError(err.message || "Failed to load challenges from API");
+      } finally {
+        setIsLoadingChallenges(false);
+      }
+    }
+    init();
   }, []);
 
+  // 2. Load a single challenge detail
+  const loadChallenge = async (slug: string) => {
+    setIsLoadingChallengeDetail(true);
+    setActiveLineForComment(null);
+    setComments([]);
+    try {
+      const detail = await fetchChallenge(slug);
+      setCurrentChallenge(detail);
+      localStorage.setItem("codereview_last_slug", slug);
+    } catch (err: any) {
+      setError(err.message || `Failed to load challenge ${slug}`);
+    } finally {
+      setIsLoadingChallengeDetail(false);
+    }
+  };
+
+  // 3. User clicks line in Monaco Editor
+  const handleLineClick = (lineNumber: number, topPx: number) => {
+    setActiveLineForComment(lineNumber);
+    setCommentFormTopPx(topPx);
+  };
+
+  // 4. Save comment from inline form
+  const handleSaveComment = (newComment: UserComment) => {
+    setComments((prev) => {
+      // Replace existing comment on that line if any, otherwise append
+      const filtered = prev.filter((c) => c.line_number !== newComment.line_number);
+      return [...filtered, newComment].sort((a, b) => a.line_number - b.line_number);
+    });
+    setActiveLineForComment(null);
+    setIsDrawerOpen(true); // Automatically open drawer so developer sees the finding added
+  };
+
+  // 5. Delete comment
+  const handleDeleteComment = (lineNumber: number) => {
+    setComments((prev) => prev.filter((c) => c.line_number !== lineNumber));
+    if (activeLineForComment === lineNumber) {
+      setActiveLineForComment(null);
+    }
+  };
+
+  // 6. Edit comment
+  const handleEditComment = (comment: UserComment) => {
+    setActiveLineForComment(comment.line_number);
+    setCommentFormTopPx(80); // Default visible top position
+  };
+
+  // 7. Submit Review to AI Judge
+  const handleSubmitReview = async () => {
+    if (!currentChallenge || comments.length === 0 || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const result = await submitReview(currentChallenge.slug, comments);
+      setEvaluationResponse(result);
+
+      // Persist solved record in localStorage
+      const updatedSolved: Record<string, SolvedRecord> = {
+        ...solvedMap,
+        [currentChallenge.id]: {
+          score: result.evaluation.score,
+          snr: result.evaluation.snr_rating,
+          timestamp: new Date().toISOString(),
+        },
+      };
+      setSolvedMap(updatedSolved);
+      localStorage.setItem(STORAGE_SOLVED_KEY, JSON.stringify(updatedSolved));
+    } catch (err: any) {
+      setError(err.message || "שגיאה בשיגור הביקורת ל-AI");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // 8. Next Challenge handler
+  const handleNextChallenge = () => {
+    if (!currentChallenge || challenges.length === 0) return;
+    const currentIndex = challenges.findIndex((c) => c.slug === currentChallenge.slug);
+    const nextIndex = (currentIndex + 1) % challenges.length;
+    const nextChallenge = challenges[nextIndex];
+    setEvaluationResponse(null);
+    loadChallenge(nextChallenge.slug);
+  };
+
+  const activeExistingComment = comments.find((c) => c.line_number === activeLineForComment);
+
   return (
-    <div className="container">
-      <div className="logo-icon">🧠</div>
-      <h1>CodeReview Arena</h1>
-      <p className="subtitle">כפרה, עובדים ומחכים להוראות מהבאקאנד 🚀</p>
+    <div className="app-shell">
+      {/* Top Application Header */}
+      <Header
+        currentChallenge={currentChallenge}
+        commentsCount={comments.length}
+        isSidebarOpen={isSidebarOpen}
+        isDrawerOpen={isDrawerOpen}
+        isSubmitting={isSubmitting}
+        onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+        onToggleDrawer={() => setIsDrawerOpen((prev) => !prev)}
+        onSubmitReview={handleSubmitReview}
+      />
 
-      <div className="status-card">
-        <div className="status-row">
-          <span>חיבור ל-Cloudflare Worker:</span>
-          {basicStatus === "loading" && (
-            <span className="badge badge-loading">
-              <span className="ping-dot"></span> בודק...
-            </span>
-          )}
-          {basicStatus === "connected" && (
-            <span className="badge badge-connected">
-              <span className="ping-dot"></span> פעיל ({basicLatency}ms)
-            </span>
-          )}
-          {basicStatus === "error" && (
-            <span className="badge badge-error">
-              <span className="ping-dot"></span> שגיאה
-            </span>
-          )}
-        </div>
-      </div>
-
-      <button
-        className="btn"
-        onClick={runFullIntegrationTest}
-        disabled={testingAll}
-      >
-        {testingAll ? "⏳ בודק את כל 4 השירותים..." : "🧪 בדיקת מערכת מלאה (4 השירותים)"}
-      </button>
-
-      {integrationError && (
-        <div className="status-card error-card">
-          <div className="error-title">❌ הבדיקה נכשלה:</div>
-          <div className="log-box">{integrationError}</div>
+      {/* Global Error Banner */}
+      {error && (
+        <div
+          style={{
+            background: "#450a0a",
+            color: "#f87171",
+            padding: "8px 20px",
+            fontSize: "13px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderBottom: "1px solid rgba(239, 68, 68, 0.3)",
+          }}
+        >
+          <span>⚠️ {error}</span>
+          <button
+            onClick={() => setError(null)}
+            style={{ background: "transparent", border: "none", color: "#f87171", cursor: "pointer" }}
+          >
+            ✕
+          </button>
         </div>
       )}
 
-      {integrationResult && (
-        <div className="status-card result-card">
-          <div className="result-header">
-            <span>🎉 כל 4 השירותים עובדים ומדברים!</span>
-            <span className="latency-pill">{integrationResult.totalLatencyMs}ms</span>
+      {/* Main Workspace Layout */}
+      <div className="workspace">
+        {/* Left: Challenge Explorer Sidebar */}
+        <Sidebar
+          challenges={challenges}
+          isLoading={isLoadingChallenges}
+          selectedSlug={currentChallenge?.slug || null}
+          isOpen={isSidebarOpen}
+          solvedMap={solvedMap}
+          onSelectChallenge={(slug) => loadChallenge(slug)}
+          onClose={() => setIsSidebarOpen(false)}
+        />
+
+        {/* Center: IDE Panel */}
+        <main className="editor-panel">
+          {/* Editor Header Navigation Tabs */}
+          <div className="panel-tabs">
+            <button
+              className={`panel-tab ${activeTab === "editor" ? "active" : ""}`}
+              onClick={() => setActiveTab("editor")}
+            >
+              <span>📄</span>
+              <span>{currentChallenge ? `${currentChallenge.slug}.py` : "buggy.py"}</span>
+              {comments.length > 0 && (
+                <span className="comments-counter" style={{ fontSize: "10px", padding: "1px 5px" }}>
+                  {comments.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              className={`panel-tab ${activeTab === "instructions" ? "active" : ""}`}
+              onClick={() => setActiveTab("instructions")}
+            >
+              <span>📖</span>
+              <span>הוראות האתגר (README)</span>
+            </button>
           </div>
 
-          <div className="checklist">
-            <div className="check-item">
-              <span className="check-icon">✅</span>
-              <div>
-                <strong>Frontend:</strong> {integrationResult.services.frontend}
-              </div>
-            </div>
+          {/* Tab 1: Code Review in Monaco Editor */}
+          {activeTab === "editor" && (
+            <div className="editor-content">
+              {isLoadingChallengeDetail ? (
+                <div style={{ padding: "40px", textAlign: "center", color: "var(--text-dim)" }}>
+                  <span className="loading-spinner"></span>
+                  <p style={{ marginTop: "12px" }}>טוען אתגר...</p>
+                </div>
+              ) : currentChallenge ? (
+                <>
+                  <CodeEditor
+                    code={currentChallenge.buggy_code}
+                    language={currentChallenge.language || "python"}
+                    comments={comments}
+                    activeLineForComment={activeLineForComment}
+                    onLineClick={handleLineClick}
+                  />
 
-            <div className="check-item">
-              <span className="check-icon">✅</span>
-              <div>
-                <strong>Backend:</strong> {integrationResult.services.worker}
-              </div>
+                  {/* Inline Comment Floating Form */}
+                  {activeLineForComment !== null && (
+                    <InlineCommentForm
+                      lineNumber={activeLineForComment}
+                      topPx={commentFormTopPx}
+                      existingComment={activeExistingComment}
+                      onSave={handleSaveComment}
+                      onCancel={() => setActiveLineForComment(null)}
+                    />
+                  )}
+                </>
+              ) : (
+                <div style={{ padding: "40px", textAlign: "center", color: "var(--text-dim)" }}>
+                  בחר אתגר מסרגל הניווט.
+                </div>
+              )}
             </div>
+          )}
 
-            <div className="check-item">
-              <span className="check-icon">✅</span>
-              <div>
-                <strong>Database:</strong> {integrationResult.services.database.status}
-                <div className="sub-detail">דגם אתגר: "{integrationResult.services.database.sample}"</div>
-              </div>
+          {/* Tab 2: Instructions (Markdown Context) */}
+          {activeTab === "instructions" && (
+            <div className="instructions-view">
+              {currentChallenge ? (
+                <div style={{ whiteSpace: "pre-wrap" }}>{currentChallenge.context_prompt}</div>
+              ) : (
+                <p>טוען הוראות...</p>
+              )}
             </div>
+          )}
+        </main>
 
-            <div className="check-item">
-              <span className="check-icon">✅</span>
-              <div>
-                <strong>AI Model:</strong> {integrationResult.services.ai.status}
-                <div className="ai-bubble">"{integrationResult.services.ai.response}"</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Right: Review Findings Drawer */}
+        <ReviewDrawer
+          comments={comments}
+          isOpen={isDrawerOpen}
+          onDeleteComment={handleDeleteComment}
+          onEditComment={handleEditComment}
+          onSubmitReview={handleSubmitReview}
+          isSubmitting={isSubmitting}
+          onClose={() => setIsDrawerOpen(false)}
+        />
+      </div>
+
+      {/* Scorecard & Diff Viewer Modal */}
+      {evaluationResponse && currentChallenge && (
+        <ScoreModal
+          evaluation={evaluationResponse.evaluation}
+          solutionCode={evaluationResponse.solution_code}
+          buggyCode={currentChallenge.buggy_code}
+          language={currentChallenge.language}
+          onClose={() => setEvaluationResponse(null)}
+          onNextChallenge={handleNextChallenge}
+        />
       )}
     </div>
   );
