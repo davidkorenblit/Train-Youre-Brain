@@ -26,14 +26,28 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ content }) => {
   };
 
   const parseInline = (text: string): React.ReactNode => {
-    // Bold **text**
-    const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
+    // Regex matching inline code, bold text, and markdown links
+    const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g);
     return parts.map((part, i) => {
       if (part.startsWith("`") && part.endsWith("`")) {
         return <code key={i}>{part.slice(1, -1)}</code>;
       }
       if (part.startsWith("**") && part.endsWith("**")) {
         return <strong key={i}>{part.slice(2, -2)}</strong>;
+      }
+      const linkMatch = part.match(/^\[(.*?)\]\((.*?)\)$/);
+      if (linkMatch) {
+        return (
+          <a
+            key={i}
+            href={linkMatch[2]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="markdown-link"
+          >
+            {linkMatch[1]} ↗
+          </a>
+        );
       }
       return part;
     });

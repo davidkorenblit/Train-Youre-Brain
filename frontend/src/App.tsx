@@ -171,6 +171,8 @@ export function App() {
       <Header
         currentChallenge={currentChallenge}
         commentsCount={comments.length}
+        solvedCount={Object.keys(solvedMap).length}
+        totalCount={challenges.length}
         isSidebarOpen={isSidebarOpen}
         isDrawerOpen={isDrawerOpen}
         isSubmitting={isSubmitting}

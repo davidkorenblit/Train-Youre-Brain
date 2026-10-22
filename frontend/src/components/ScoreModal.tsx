@@ -163,33 +163,61 @@ export const ScoreModal: React.FC<ScoreModalProps> = ({
           </div>
 
           {/* Diff Viewer Toggle */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "14px", fontWeight: 600 }}>השוואת פתרון הייחוס (Diff):</span>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "6px" }}>
+            <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--cyan-glow)" }}>
+              🔍 השוואת קוד פגום מול פתרון מומלץ (Diff):
+            </span>
             <button
               className="btn-secondary"
               onClick={() => setShowDiff(!showDiff)}
+              style={{
+                background: showDiff ? "rgba(6, 182, 212, 0.2)" : "rgba(255, 255, 255, 0.05)",
+                borderColor: showDiff ? "var(--cyan-electric)" : "var(--border-subtle)",
+              }}
             >
-              {showDiff ? "הסתר השוואה" : "🔍 הצג קוד פגום מול פתרון"}
+              {showDiff ? "הסתר השוואה ✕" : "הצג השוואת פתרון (Diff) 🔎"}
             </button>
           </div>
 
           {showDiff && (
-            <div className="diff-section">
-              <DiffEditor
-                height="100%"
-                language={language}
-                original={buggyCode}
-                modified={solutionCode}
-                theme="vs-dark"
-                options={{
-                  readOnly: true,
-                  fontSize: 13,
-                  fontFamily: "'Fira Code', monospace",
-                  renderSideBySide: true,
-                  minimap: { enabled: false },
-                  scrollBeyondLastLine: false,
+            <div className="diff-section" style={{ minHeight: "360px", height: "360px", width: "100%" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-around",
+                  background: "#080c14",
+                  padding: "6px 12px",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  fontFamily: "var(--font-code)",
+                  borderBottom: "1px solid var(--border-subtle)",
                 }}
-              />
+              >
+                <span style={{ color: "var(--crimson-critical)" }}>🔴 קוד המקור הפגום (Original)</span>
+                <span style={{ color: "var(--emerald-success)" }}>🟢 פתרון הייחוס המתוקן (Solution)</span>
+              </div>
+              <div style={{ flex: 1, minHeight: "320px", position: "relative" }}>
+                <DiffEditor
+                  height="320px"
+                  language={language}
+                  original={buggyCode}
+                  modified={solutionCode}
+                  theme="vs-dark"
+                  options={{
+                    readOnly: true,
+                    fontSize: 13,
+                    fontFamily: "'Fira Code', monospace",
+                    renderSideBySide: true,
+                    automaticLayout: true,
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    scrollbar: {
+                      vertical: "visible",
+                      horizontal: "visible",
+                    },
+                  }}
+                />
+              </div>
             </div>
           )}
         </div>

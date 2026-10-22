@@ -4,6 +4,8 @@ import { ChallengeDetail } from "../types";
 interface HeaderProps {
   currentChallenge: ChallengeDetail | null;
   commentsCount: number;
+  solvedCount: number;
+  totalCount: number;
   isSidebarOpen: boolean;
   isDrawerOpen: boolean;
   isSubmitting: boolean;
@@ -15,6 +17,8 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   currentChallenge,
   commentsCount,
+  solvedCount,
+  totalCount,
   isSidebarOpen,
   isDrawerOpen,
   isSubmitting,
@@ -37,21 +41,40 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="app-header">
-      <div className="brand" onClick={onToggleSidebar} title="פתח/סגור רשימת אתגרים">
-        <div className="brand-icon-wrapper">
-          <span className="brand-icon">🧠</span>
+      {/* Brand & Tactical Title */}
+      <div className="brand-wrapper" onClick={onToggleSidebar} title="פתח/סגור סרגל אתגרים">
+        <div className="brand-shield">
+          <span>🧠</span>
         </div>
-        <span className="brand-title">CodeReview Arena</span>
-        <span className="brand-badge">PRO SIMULATOR</span>
+        <div className="brand-texts">
+          <span className="brand-title">CodeReview Arena</span>
+          <span className="brand-tagline">TACTICAL SIMULATOR</span>
+        </div>
       </div>
 
-      {currentChallenge && (
-        <div className="header-active-info">
-          <span className="active-title">{currentChallenge.title}</span>
-          {getLevelBadge(currentChallenge.level)}
+      {/* Center: Live Telemetry & Active Challenge */}
+      <div className="header-telemetry">
+        <div className="live-pulse-chip" title="מנוע השפיטה של AI זמין">
+          <span className="pulse-dot"></span>
+          <span>EDGE ONLINE</span>
         </div>
-      )}
 
+        {totalCount > 0 && (
+          <div className="progress-counter-badge" title="אתגרים שנפתרו">
+            <span>מפוענחים:</span>
+            <strong>{solvedCount} / {totalCount}</strong>
+          </div>
+        )}
+
+        {currentChallenge && (
+          <div className="header-active-challenge">
+            <span className="active-title">{currentChallenge.title}</span>
+            {getLevelBadge(currentChallenge.level)}
+          </div>
+        )}
+      </div>
+
+      {/* Action Buttons */}
       <div className="header-actions">
         <button
           className="btn-submit-review"
@@ -67,7 +90,7 @@ export const Header: React.FC<HeaderProps> = ({
           ) : (
             <>
               <span>🚀 שלח ביקורת</span>
-              <span className="comments-counter">{commentsCount}</span>
+              {commentsCount > 0 && <span className="comments-counter">{commentsCount}</span>}
             </>
           )}
         </button>
@@ -76,8 +99,31 @@ export const Header: React.FC<HeaderProps> = ({
           className={`btn-icon ${isDrawerOpen ? "active" : ""}`}
           onClick={onToggleDrawer}
           title="מגירת ממצאים והערות"
+          style={{ position: "relative" }}
         >
-          📝
+          <span>📝</span>
+          {commentsCount > 0 && (
+            <span
+              style={{
+                position: "absolute",
+                top: "-4px",
+                right: "-4px",
+                background: "var(--cyan-electric)",
+                color: "#000",
+                fontSize: "10px",
+                fontWeight: 800,
+                borderRadius: "50%",
+                width: "18px",
+                height: "18px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 0 8px rgba(6, 182, 212, 0.8)",
+              }}
+            >
+              {commentsCount}
+            </span>
+          )}
         </button>
 
         <button
@@ -85,7 +131,7 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={onToggleSidebar}
           title="סרגל בחירת אתגרים"
         >
-          ☰
+          <span>☰</span>
         </button>
       </div>
     </header>
