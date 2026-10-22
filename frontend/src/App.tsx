@@ -5,6 +5,7 @@ import { CodeEditor } from "./components/CodeEditor";
 import { InlineCommentForm } from "./components/InlineCommentForm";
 import { ReviewDrawer } from "./components/ReviewDrawer";
 import { ScoreModal } from "./components/ScoreModal";
+import { MarkdownViewer } from "./components/MarkdownViewer";
 import {
   ChallengeMetadata,
   ChallengeDetail,
@@ -280,13 +281,13 @@ export function App() {
 
           {/* Tab 2: Instructions (Markdown Context) */}
           {activeTab === "instructions" && (
-            <div className="instructions-view">
-              {currentChallenge ? (
-                <div style={{ whiteSpace: "pre-wrap" }}>{currentChallenge.context_prompt}</div>
-              ) : (
+            currentChallenge ? (
+              <MarkdownViewer content={currentChallenge.context_prompt} />
+            ) : (
+              <div className="instructions-view">
                 <p>טוען הוראות...</p>
-              )}
-            </div>
+              </div>
+            )
           )}
         </main>
 

@@ -38,8 +38,11 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="app-header">
       <div className="brand" onClick={onToggleSidebar} title="פתח/סגור רשימת אתגרים">
-        <span className="brand-icon">🧠</span>
+        <div className="brand-icon-wrapper">
+          <span className="brand-icon">🧠</span>
+        </div>
         <span className="brand-title">CodeReview Arena</span>
+        <span className="brand-badge">PRO SIMULATOR</span>
       </div>
 
       {currentChallenge && (
