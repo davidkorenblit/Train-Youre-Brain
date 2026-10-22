@@ -1,25 +1,34 @@
+// ============================================================================
+// CodeReview Arena - Backend API Main Entry Point (Cloudflare Workers)
+// Root configuration: routing, CORS, rate limiting, and integration health
+// ============================================================================
+
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { createClient } from "@supabase/supabase-js";
-
-type Bindings = {
-  SUPABASE_URL: string;
-  SUPABASE_PUBLISHABLE_KEY: string;
-  GEMINI_API_KEY: string;
-};
+import { Bindings } from "./types";
+import { getSupabase } from "./db/client";
+import { rateLimiter } from "./middleware/rate_limiter";
+import challengesRouter from "./routes/challenges";
+import submissionsRouter from "./routes/submissions";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// Enable Cross-Origin Resource Sharing (CORS) for frontend
+// 1. Enable Cross-Origin Resource Sharing (CORS) for frontend on GitHub Pages
 app.use("*", cors());
 
-// Health Check & Welcome Endpoint
+// 2. Health check and discovery endpoints
 app.get("/", (c) => {
   return c.json({
     app: "CodeReview Arena API",
     status: "online",
     platform: "Cloudflare Workers",
     version: "1.0.0",
+    docs: {
+      challenges: "GET /api/challenges",
+      challenge_by_id: "GET /api/challenges/:id",
+      submit_review: "POST /api/challenges/:id/submit",
+      submission_by_id: "GET /api/submissions/:id",
+    },
   });
 });
 
@@ -30,24 +39,27 @@ app.get("/health", (c) => {
   });
 });
 
-// Full 4-Way Integration Test: Frontend -> Worker -> Supabase -> Gemini
+// 3. Rate limiter middleware: protects AI submission endpoint from abuse (15 submissions / 5 min per IP)
+app.use("/api/challenges/:id/submit", rateLimiter({ windowMs: 5 * 60 * 1000, max: 15 }));
+
+// 4. Mount primary route modules
+app.route("/api/challenges", challengesRouter);
+app.route("/challenges", challengesRouter); // Backwards compatibility
+app.route("/api/submissions", submissionsRouter);
+
+// 5. Full 4-way integration test endpoint (Frontend -> Worker -> Supabase -> Gemini)
 app.get("/api/test-integration", async (c) => {
   const startTime = Date.now();
-  const supabaseUrl = c.env.SUPABASE_URL || "https://lyxcrcnhcujldrktoblm.supabase.co";
-  const supabaseKey = c.env.SUPABASE_PUBLISHABLE_KEY;
   const geminiKey = c.env.GEMINI_API_KEY;
 
-  if (!supabaseKey) {
-    return c.json({ error: "SUPABASE_PUBLISHABLE_KEY is missing in Cloudflare" }, 500);
-  }
   if (!geminiKey) {
-    return c.json({ error: "GEMINI_API_KEY is missing in Cloudflare" }, 500);
+    return c.json({ error: "GEMINI_API_KEY is missing in Cloudflare environment" }, 500);
   }
 
-  // 1. Test Supabase Database
+  // Step A: Verify database connection and fetch sample challenge
   let sampledChallenge = null;
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = getSupabase(c.env);
     const { data, error } = await supabase
       .from("challenges")
       .select("id, title, slug, level")
@@ -57,14 +69,15 @@ app.get("/api/test-integration", async (c) => {
     if (error) throw new Error(`Supabase error: ${error.message}`);
     sampledChallenge = data;
   } catch (err: any) {
-    return c.json({ error: `Database failed: ${err.message}` }, 500);
+    return c.json({ error: `Database check failed: ${err.message}` }, 500);
   }
 
-  // 2. Test Gemini 1.5 Flash AI
+  // Step B: Verify Gemini AI model connectivity
   let geminiMessage = "";
   try {
     const prompt = `אתה שופט ביקורת קוד ב-CodeReview Arena. תן משפט עידוד אחד קצר (עד 7 מילים) בעברית למתכנת שמתחיל לסקור את האתגר "${sampledChallenge?.title}".`;
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${geminiKey}`;
+    const model = c.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
 
     const geminiRes = await fetch(geminiUrl, {
       method: "POST",
@@ -84,7 +97,7 @@ app.get("/api/test-integration", async (c) => {
     geminiMessage =
       geminiData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "בהצלחה בסקירת הקוד!";
   } catch (err: any) {
-    return c.json({ error: `Gemini AI failed: ${err.message}` }, 500);
+    return c.json({ error: `Gemini AI check failed: ${err.message}` }, 500);
   }
 
   const durationMs = Date.now() - startTime;
@@ -93,47 +106,18 @@ app.get("/api/test-integration", async (c) => {
     success: true,
     totalLatencyMs: durationMs,
     services: {
-      frontend: "מחובר (GitHub Pages)",
-      worker: "פעיל (Cloudflare Workers)",
+      frontend: "Connected (GitHub Pages)",
+      worker: "Active (Cloudflare Workers)",
       database: {
-        status: "מחובר (Supabase)",
-        sample: `${sampledChallenge?.title} (רמה ${sampledChallenge?.level})`,
+        status: "Connected (Supabase)",
+        sample: `${sampledChallenge?.title} (Level ${sampledChallenge?.level})`,
       },
       ai: {
-        status: "פעיל (Gemini 3.5 Flash Lite)",
+        status: "Active (Gemini)",
         response: geminiMessage,
       },
     },
     timestamp: new Date().toISOString(),
-  });
-});
-
-// Fetch all available challenges (metadata & context only - no solutions leaked)
-app.get("/challenges", async (c) => {
-  const supabaseUrl = c.env.SUPABASE_URL || "https://lyxcrcnhcujldrktoblm.supabase.co";
-  const supabaseKey = c.env.SUPABASE_PUBLISHABLE_KEY;
-
-  if (!supabaseKey) {
-    return c.json(
-      { error: "SUPABASE_PUBLISHABLE_KEY is not configured in environment" },
-      500
-    );
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
-  const { data, error } = await supabase
-    .from("challenges")
-    .select("id, title, slug, level, language, context_prompt, buggy_code, is_active, created_at")
-    .eq("is_active", true)
-    .order("level", { ascending: true });
-
-  if (error) {
-    return c.json({ error: error.message }, 500);
-  }
-
-  return c.json({
-    total: data ? data.length : 0,
-    challenges: data,
   });
 });
 

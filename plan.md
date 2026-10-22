@@ -24,39 +24,21 @@
 ## 2. משימות Backend (Cloudflare Workers + Supabase + Gemini) 🛠️
 
 ### משימה ב.1: מנוע השפיטה `ai_judge.ts`
-- [ ] יצירת מודול `backend/src/services/ai_judge.ts`.
-- [ ] הגדרת מבנה JSON Schema נוקשה לתשובת המודל:
-  ```ts
-  interface ReviewEvaluation {
-    score: number;             // 0-100
-    true_positives: string[];  // באגים שאותרו נכון
-    false_positives: string[]; // הערות שווא שמורידות ציון (Noise)
-    false_negatives: string[]; // באגים אמיתיים שפוספסו
-    snr_rating: "Excellent" | "Good" | "Needs Improvement";
-    ai_feedback: string;       // הסבר בונה בעברית
-    suggested_fix_review: string;
-  }
-  ```
-- [ ] מודל הגנה רב-שכבתי מפני Prompt Injection (Defense-in-Depth):
-  1. **הפרדת רשויות ב-Gemini API:** הוראות השפיטה וה-`golden_bug` מוגדרים אך ורק ב-`systemInstruction` (עדיפות עליונה ב-RLHF של גוגל).
-  2. **תיחום דינמי ב-Nonce אקראי:** קלט המשתמש עטוף ב-`<<<USER_DATA_${crypto.randomUUID()}>>>` למניעת סגירת תגיות ידנית.
-  3. **סניטציה והגבלת קלט ב-Backend:** הגבלת אורך תווים (עד 350 לתווית), אימות שמספרי השורות קיימים בקוד, וסינון תבניות עקיפה נפוצות.
-  4. **כפיית JSON Schema מוחלטת:** שימוש ב-`responseSchema` של Gemini (המודל אינו יכול לפלוט טקסט חופשי).
-  5. **בקרת שפיות פוסט-עיבוד (Sanity Check):** בדיקת תקינות בקוד השרת (לדוגמה: אם `score > 0` אך `true_positives` ריק – ההגשה נחסמת אוטומטית כניסיון מניפולציה).
+- [x] יצירת מודול `backend/src/services/ai_judge.ts`.
+- [x] הגדרת מבנה JSON Schema נוקשה לתשובת המודל (`ReviewEvaluation`).
+- [x] מודל הגנה רב-שכבתי מפני Prompt Injection (Defense-in-Depth):
+  1. **הפרדת רשויות ב-Gemini API:** הוראות השפיטה וה-`golden_bug` מוגדרים אך ורק ב-`systemInstruction`.
+  2. **תיחום דינמי ב-Nonce אקראי:** קלט המשתמש עטוף ב-`<<<USER_DATA_${crypto.randomUUID()}>>>`.
+  3. **סניטציה והגבלת קלט ב-Backend:** הגבלת אורך תווים (עד 350), אימות מספרי שורות וסינון תבניות עקיפה.
+  4. **כפיית JSON Schema מוחלטת:** שימוש ב-`responseSchema` של Gemini למבנה מדויק.
+  5. **בקרת שפיות פוסט-עיבוד (Sanity Check):** בדיקת תקינות בקוד השרת ומניעת מניפולציות ציון.
 
 ### משימה ב.2: נקודות קצה ב-API (Hono Routes)
-- [ ] `GET /api/challenges`:
-  - מחזיר את כל 35 התרגילים (מזהה, שם, רמה, שפה, הקשר – ללא פתרון הייחוס).
-- [ ] `GET /api/challenges/:id`:
-  - מחזיר תרגיל בודד עם ה-README והקוד הפגום (`buggy_code`).
-- [ ] `POST /api/challenges/:id/submit`:
-  - מקבל מערך של הערות המשתמש (שורה, חומרה, תיאור, הצעה לתיקון).
-  - שולף את ה-`golden_bug` של האתגר מ-Supabase.
-  - מריץ את `ai_judge` מול Gemini 3.5 Flash Lite.
-  - שומר את ההגשה בטבלת `submissions` ב-Supabase.
-  - מחזיר את הציון, המשוב, ואת פתרון הייחוס (`solution_code`).
-- [ ] `GET /api/submissions/:id`:
-  - שליפת היסטוריית הגשה לצפייה חוזרת.
+- [x] `GET /api/challenges`: מחזיר את כל 35 התרגילים (ללא חשיפת פתרונות).
+- [x] `GET /api/challenges/:id`: מחזיר תרגיל בודד לפי מזהה או slug כולל `buggy_code`.
+- [x] `POST /api/challenges/:id/submit`: מקבל הערות, מריץ שפיטה, שומר ב-`submissions`, ומחזיר ציון + פתרון.
+- [x] `GET /api/submissions/:id`: שליפת היסטוריית הגשה לצפייה חוזרת לפי UUID.
+- [x] **Rate Limiter Middleware:** הגבלת קצב (15 הגשות ב-5 דקות פר כתובת IP).
 
 ---
 
