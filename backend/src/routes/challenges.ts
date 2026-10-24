@@ -6,6 +6,7 @@
 import { Hono } from "hono";
 import { Bindings, SubmitReviewPayload } from "../types";
 import { getSupabase, findChallengeByIdOrSlug, isValidUuid } from "../db/client";
+import { getAuthenticatedUser } from "../middleware/auth";
 import {
   evaluateCodeReview,
   EvaluationValidationError,
@@ -120,12 +121,16 @@ challengesRouter.post("/:id/submit", async (c) => {
       userComments: payload?.comments || [],
     });
 
+    // Optional: Extract authenticated GitHub user from Authorization Bearer token
+    const authUser = await getAuthenticatedUser(c, supabase);
+    const resolvedUserId = authUser?.id || (isValidUuid(payload?.user_id) ? payload.user_id : null);
+
     // Persist submission record in database
     const { data: submissionRow, error: insertError } = await supabase
       .from("submissions")
       .insert({
         challenge_id: challenge.id,
-        user_id: isValidUuid(payload.user_id) ? payload.user_id : null,
+        user_id: resolvedUserId,
         user_claims: sanitizedComments,
         ai_evaluation: evaluation,
         total_score: evaluation.score,

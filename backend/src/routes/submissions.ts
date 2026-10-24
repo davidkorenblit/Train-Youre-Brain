@@ -6,8 +6,43 @@
 import { Hono } from "hono";
 import { Bindings } from "../types";
 import { getSupabase, isValidUuid } from "../db/client";
+import { getAuthenticatedUser } from "../middleware/auth";
 
 const submissionsRouter = new Hono<{ Bindings: Bindings }>();
+
+/**
+ * GET /api/submissions/user/me
+ * Retrieves user profile & history for the currently authenticated developer.
+ */
+submissionsRouter.get("/user/me", async (c) => {
+  try {
+    const supabase = getSupabase(c.env);
+    const authUser = await getAuthenticatedUser(c, supabase);
+
+    if (!authUser) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const { data: history, error } = await supabase
+      .from("submissions")
+      .select("id, challenge_id, total_score, created_at, challenges(title, slug, level)")
+      .eq("user_id", authUser.id)
+      .order("created_at", { ascending: false })
+      .limit(25);
+
+    if (error) {
+      return c.json({ error: error.message }, 500);
+    }
+
+    return c.json({
+      success: true,
+      user: authUser,
+      submissions: history || [],
+    });
+  } catch (err: any) {
+    return c.json({ error: `Failed to fetch user history: ${err.message}` }, 500);
+  }
+});
 
 /**
  * 4. GET /api/submissions/:id

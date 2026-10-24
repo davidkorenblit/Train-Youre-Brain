@@ -45,13 +45,20 @@ export async function fetchChallenge(identifier: string): Promise<ChallengeDetai
 export async function submitReview(
   identifier: string,
   comments: UserComment[],
-  userId?: string
+  userId?: string,
+  authToken?: string | null
 ): Promise<SubmitReviewResponse> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
+
   const res = await fetch(`${BACKEND_URL}/api/challenges/${identifier}/submit`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify({
       comments,
       user_id: userId,

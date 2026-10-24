@@ -50,3 +50,10 @@ export interface SolvedRecord {
   snr: string;
   timestamp: string;
 }
+
+export interface AuthUser {
+  id: string;
+  email?: string;
+  username: string;
+  avatar_url?: string;
+}

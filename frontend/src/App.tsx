@@ -12,8 +12,16 @@ import {
   UserComment,
   SubmitReviewResponse,
   SolvedRecord,
+  AuthUser,
 } from "./types";
 import { fetchChallenges, fetchChallenge, submitReview } from "./services/api";
+import {
+  signInWithGithub,
+  signOut,
+  getCurrentUser,
+  getAuthToken,
+  onAuthStateChange,
+} from "./services/auth";
 import { getChallengeHebrewSummary } from "./data/challengeSummaries";
 
 const STORAGE_SOLVED_KEY = "codereview_arena_solved_map";
@@ -44,6 +52,9 @@ export function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [evaluationResponse, setEvaluationResponse] = useState<SubmitReviewResponse | null>(null);
 
+  // Authenticated GitHub user
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+
   // Solved challenges map loaded from localStorage
   const [solvedMap, setSolvedMap] = useState<Record<string, SolvedRecord>>(() => {
     try {
@@ -53,6 +64,15 @@ export function App() {
       return {};
     }
   });
+
+  // Track GitHub authentication state
+  useEffect(() => {
+    getCurrentUser().then(setAuthUser).catch(() => {});
+    const unsubscribe = onAuthStateChange((user) => {
+      setAuthUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // 1. Initial Load: Fetch all 35 challenges
   useEffect(() => {
@@ -133,7 +153,13 @@ export function App() {
     setError(null);
 
     try {
-      const result = await submitReview(currentChallenge.slug, comments);
+      const token = await getAuthToken().catch(() => null);
+      const result = await submitReview(
+        currentChallenge.slug,
+        comments,
+        authUser?.id,
+        token
+      );
       setEvaluationResponse(result);
 
       // Persist solved record in localStorage
@@ -178,6 +204,9 @@ export function App() {
         isSidebarOpen={isSidebarOpen}
         isDrawerOpen={isDrawerOpen}
         isSubmitting={isSubmitting}
+        authUser={authUser}
+        onLoginWithGithub={signInWithGithub}
+        onSignOut={signOut}
         onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
         onToggleDrawer={() => setIsDrawerOpen((prev) => !prev)}
         onSubmitReview={handleSubmitReview}
