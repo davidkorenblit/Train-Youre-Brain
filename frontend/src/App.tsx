@@ -6,6 +6,7 @@ import { InlineCommentForm } from "./components/InlineCommentForm";
 import { ReviewDrawer } from "./components/ReviewDrawer";
 import { ScoreModal } from "./components/ScoreModal";
 import { MarkdownViewer } from "./components/MarkdownViewer";
+import { LoginPage } from "./pages/LoginPage";
 import {
   ChallengeMetadata,
   ChallengeDetail,
@@ -52,8 +53,10 @@ export function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [evaluationResponse, setEvaluationResponse] = useState<SubmitReviewResponse | null>(null);
 
-  // Authenticated GitHub user
+  // Authenticated GitHub user & Gatekeeper state
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [isGuestMode, setIsGuestMode] = useState(false);
 
   // Solved challenges map loaded from localStorage
   const [solvedMap, setSolvedMap] = useState<Record<string, SolvedRecord>>(() => {
@@ -67,9 +70,14 @@ export function App() {
 
   // Track GitHub authentication state
   useEffect(() => {
-    getCurrentUser().then(setAuthUser).catch(() => {});
+    getCurrentUser()
+      .then(setAuthUser)
+      .catch(() => {})
+      .finally(() => setIsAuthChecking(false));
+
     const unsubscribe = onAuthStateChange((user) => {
       setAuthUser(user);
+      setIsAuthChecking(false);
     });
     return () => unsubscribe();
   }, []);
@@ -193,6 +201,46 @@ export function App() {
   const activeExistingComment = comments.find((c) => c.line_number === activeLineForComment);
   const hebrewSummary = getChallengeHebrewSummary(currentChallenge?.slug);
 
+  // 1. Loading check on initial auth state
+  if (isAuthChecking) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#080c14",
+          color: "#94a3b8",
+          fontSize: "14px",
+          fontFamily: "system-ui, sans-serif",
+          direction: "rtl",
+        }}
+      >
+        <span>טוען CodeReview Arena...</span>
+      </div>
+    );
+  }
+
+  // 2. Gatekeeper: Show LoginPage if user is not authenticated and hasn't chosen guest mode
+  if (!authUser && !isGuestMode) {
+    return (
+      <LoginPage
+        onLoginWithGithub={signInWithGithub}
+        onContinueAsGuest={() => setIsGuestMode(true)}
+      />
+    );
+  }
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } finally {
+      setIsGuestMode(false);
+      setAuthUser(null);
+    }
+  };
+
   return (
     <div className="app-shell">
       {/* Top Application Header */}
@@ -206,7 +254,7 @@ export function App() {
         isSubmitting={isSubmitting}
         authUser={authUser}
         onLoginWithGithub={signInWithGithub}
-        onSignOut={signOut}
+        onSignOut={handleSignOut}
         onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
         onToggleDrawer={() => setIsDrawerOpen((prev) => !prev)}
         onSubmitReview={handleSubmitReview}
