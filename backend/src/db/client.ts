@@ -19,10 +19,10 @@ export function isValidUuid(id?: string | null): boolean {
  * Returns a lightweight, stateless Supabase client scoped to the current Worker request.
  */
 export function getSupabase(env: Bindings): SupabaseClient {
-  const supabaseUrl = env.SUPABASE_URL || "https://lyxcrcnhcujldrktoblm.supabase.co";
+  const supabaseUrl = env.SUPABASE_URL;
   const supabaseKey = env.SUPABASE_SECRET_KEY || env.SUPABASE_PUBLISHABLE_KEY;
 
-  if (!supabaseKey) {
+  if (!supabaseUrl || !supabaseKey) {
     throw new Error("Supabase credentials are not configured in environment bindings");
   }
 
