@@ -629,7 +629,10 @@ body {
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .ws-hebrew-card {
@@ -638,6 +641,9 @@ body {
   border-radius: var(--radius-md);
   padding: 16px;
   direction: rtl;
+  flex-shrink: 0;
+  max-height: 48%;
+  overflow-y: auto;
 }
 .ws-hebrew-header {
   display: flex;
@@ -700,9 +706,13 @@ body {
   background: #0a0f1d;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  overflow: hidden;
   direction: ltr;
   text-align: left;
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 .ws-readme-header {
   background: #111a2e;
@@ -711,6 +721,7 @@ body {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 .ws-readme-body {
   padding: 16px;
@@ -719,6 +730,9 @@ body {
   line-height: 1.6;
   direction: ltr;
   text-align: left;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
 }
 .ws-readme-body h1,
 .ws-readme-body h2,
