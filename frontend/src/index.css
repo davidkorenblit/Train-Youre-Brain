@@ -717,14 +717,64 @@ body {
   font-size: 13px;
   color: #cbd5e1;
   line-height: 1.6;
+  direction: ltr;
+  text-align: left;
+}
+.ws-readme-body h1,
+.ws-readme-body h2,
+.ws-readme-body h3 {
+  color: #fff;
+  margin: 12px 0 6px 0;
+  font-weight: 700;
+}
+.ws-readme-body h1 { font-size: 17px; }
+.ws-readme-body h2 { font-size: 15px; }
+.ws-readme-body h3 { font-size: 13px; }
+.ws-readme-body p { margin-bottom: 8px; }
+.ws-readme-body ul { padding-left: 20px; margin-bottom: 8px; }
+.ws-readme-body li { margin-bottom: 4px; }
+.ws-readme-body pre {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  font-family: var(--font-code);
+  font-size: 12px;
+  color: #e6edf3;
+  margin: 10px 0;
+}
+.ws-readme-body code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: var(--font-code);
+  font-size: 12px;
+  color: #38bdf8;
+}
+.ws-readme-body pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+.ws-readme-body a.markdown-link {
+  color: #38bdf8;
+  text-decoration: none;
+}
+.ws-readme-body a.markdown-link:hover {
+  text-decoration: underline;
 }
 
 /* Pane 2: Center Monaco Editor */
 .ws-pane-editor {
   display: flex;
   flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
   overflow: hidden;
   background: #0d1117;
+  direction: ltr;
 }
 
 .ws-editor-header {
@@ -761,9 +811,180 @@ body {
 }
 
 .ws-editor-content {
-  flex-grow: 1;
+  flex: 1 1 0;
+  height: calc(100% - 42px);
+  min-height: 400px;
   position: relative;
   background: #0d1117;
+  direction: ltr;
+  overflow: hidden;
+}
+
+/* Monaco Glyph Hover + Line Highlights */
+.monaco-glyph-add-btn {
+  background-color: #38bdf8 !important;
+  color: #000 !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  text-align: center !important;
+  font-weight: bold !important;
+  line-height: 18px !important;
+  font-size: 14px !important;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.8) !important;
+  transition: transform 0.15s ease !important;
+}
+.monaco-glyph-add-btn:hover {
+  transform: scale(1.25) !important;
+}
+.monaco-commented-line {
+  background: rgba(56, 189, 248, 0.12) !important;
+}
+
+/* Inline Review Comment Popover */
+.gh-inline-comment-wrapper {
+  position: absolute;
+  left: 60px;
+  right: 20px;
+  z-index: 50;
+  max-width: 720px;
+  direction: ltr;
+}
+.gh-inline-box {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+.gh-inline-header {
+  background: #0d1117;
+  border-bottom: 1px solid #30363d;
+  padding: 6px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.gh-inline-tabs {
+  display: flex;
+  gap: 4px;
+}
+.gh-inline-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 3px 10px;
+  color: #8b949e;
+  font-size: 13px;
+  cursor: pointer;
+}
+.gh-inline-tab.active {
+  background: #161b22;
+  border-color: #30363d;
+  color: #f0f6fc;
+  font-weight: 600;
+}
+.gh-inline-line-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gh-line-ref {
+  font-family: var(--font-code);
+  font-size: 12px;
+  color: #8b949e;
+}
+.gh-severity-dropdown {
+  background: #161b22;
+  border: 1px solid #30363d;
+  color: #f0f6fc;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  cursor: pointer;
+}
+.gh-inline-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gh-comment-input,
+.gh-fix-input {
+  width: 100%;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  color: #f0f6fc;
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  font-family: var(--font-hebrew);
+  font-size: 13px;
+  resize: vertical;
+}
+.gh-comment-input:focus,
+.gh-fix-input:focus {
+  outline: none;
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.3);
+}
+.gh-fix-input {
+  font-family: var(--font-code);
+  font-size: 12px;
+  direction: ltr;
+}
+.gh-inline-preview {
+  padding: 16px;
+  min-height: 80px;
+}
+.gh-preview-text {
+  font-size: 14px;
+  color: #f0f6fc;
+  margin-bottom: 8px;
+}
+.gh-preview-fix pre {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  padding: 8px;
+  border-radius: 4px;
+  font-family: var(--font-code);
+  font-size: 12px;
+}
+.gh-inline-actions {
+  background: #0d1117;
+  border-top: 1px solid #30363d;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.gh-btn-secondary {
+  background: #21262d;
+  border: 1px solid #30363d;
+  color: #c9d1d9;
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.gh-btn-secondary:hover {
+  background: #30363d;
+}
+.gh-btn-primary {
+  background: #238636;
+  border: 1px solid rgba(240, 246, 252, 0.1);
+  color: #fff;
+  padding: 5px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.gh-btn-primary:hover:not(:disabled) {
+  background: #2ea043;
+}
+.gh-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Pane 3: Findings & AI Evaluation */

@@ -5,14 +5,16 @@ interface MarkdownViewerProps {
   content: string;
   slug?: string;
   challengeTitle?: string;
+  showHebrewIntro?: boolean;
 }
 
 export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
   content,
   slug,
   challengeTitle,
+  showHebrewIntro = false,
 }) => {
-  const hebrewSummary = getChallengeHebrewSummary(slug);
+  const hebrewSummary = showHebrewIntro ? getChallengeHebrewSummary(slug) : null;
 
   // Simple, robust zero-dependency parser for exercise README markdown
   const lines = content.split("\n");

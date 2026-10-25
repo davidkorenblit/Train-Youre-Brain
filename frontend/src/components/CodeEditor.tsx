@@ -97,9 +97,19 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   }, [comments, activeLineForComment]);
 
   return (
-    <div style={{ width: "100%", height: "100%", position: "relative" }}>
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        minHeight: "450px",
+        position: "relative",
+        direction: "ltr",
+        textAlign: "left",
+      }}
+    >
       <Editor
         height="100%"
+        width="100%"
         language={language}
         value={code}
         theme="vs-dark"

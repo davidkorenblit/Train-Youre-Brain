@@ -134,8 +134,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
             <div className="ws-readme-body">
               <MarkdownViewer
                 content={challenge.context_prompt}
-                slug={challenge.slug}
-                challengeTitle={challenge.title}
+                showHebrewIntro={false}
               />
             </div>
           </div>
